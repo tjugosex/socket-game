@@ -2,16 +2,22 @@
   import { onMount } from "svelte";
   import { io } from "socket.io-client";
   import { each } from "svelte/internal";
-  const socket = io("http://localhost:3002"); // Change the URL to your server's address
+  import Game from "./lib/Game.svelte";
+  import { prompt, nickname } from "./stores.js";
+  import socket from "./socket.js";
+  import TenorGifs from "./lib/TenorGifs.svelte";
+
   let playing: boolean = false;
   let host: boolean = false;
   let roomNumber;
   let clientsInRoom;
   let roomCode;
   let clientId;
-  let nickname: string = "";
+
   let players = [];
   let FeedbackText = "";
+  let InGame: boolean = false;
+
   onMount(async () => {
     if (localStorage.getItem("clientId")) {
       clientId = localStorage.getItem("clientId");
@@ -44,6 +50,12 @@
     socket.on("join failed", (feedback) => {
       FeedbackText = feedback;
     });
+    socket.on("startGame", (asd) => {
+      InGame = true;
+    });
+    socket.on("receivePrompt", (randomPrompt) => {
+      prompt.set(randomPrompt);
+    });
   });
 
   function setFeedbackText(text) {
@@ -58,29 +70,33 @@
   }
 
   async function connectAsHost() {
-    if (nickname.trim() === "") {
+    if ($nickname.trim() === "") {
       setFeedbackText("Nickname cannot be empty!");
       return;
     }
-    socket.emit("room host", clientId, nickname);
+    socket.emit("room host", clientId, $nickname);
 
     playing = true;
     host = true;
   }
   $: {
-    if (nickname && nickname.trim() === "") {
+    if ($nickname && $nickname.trim() === "") {
       FeedbackText = "Nickname cannot be empty!";
     } else {
       FeedbackText = "";
     }
   }
 
+  async function startGame() {
+    socket.emit("start game");
+  }
+
   async function connectAsClient(room) {
-    if (nickname.trim() === "") {
+    if ($nickname.trim() === "") {
       setFeedbackText("Nickname cannot be empty!");
       return;
     }
-    socket.emit("room join", room, clientId, nickname);
+    socket.emit("room join", room, clientId, $nickname);
 
     // Listen for 'join successful' event
     socket.on("join successful", () => {
@@ -101,16 +117,19 @@
 </script>
 
 <main>
-  <p>{clientId}</p>
   {#if playing === false}
-    <p>Name:</p>
-    <input bind:value={nickname} />
-    <button on:click={connectAsHost}>Connect as Host</button>
+    <div class="form-container">
+      <div class="name-input">
+        <p>Name:</p>
+        <input placeholder="Name" bind:value={$nickname} />
+      </div>
+      <button style="width:fit-content"on:click={connectAsHost}>Connect as Host</button>
 
-    <form on:submit={onFormSubmit}>
-      <input type="text" placeholder="Room code" bind:value={roomCode} />
-      <button type="submit">Join</button>
-    </form>
+      <form on:submit={onFormSubmit}>
+        <input type="text" placeholder="Room code" bind:value={roomCode} />
+        <button type="submit">Join</button>
+      </form>
+    </div>
   {:else if playing === true}
     <button
       on:click={() => {
@@ -121,15 +140,57 @@
 
     <h1>Number of players: {clientsInRoom}</h1>
     <h1>Room code: {roomNumber}</h1>
-    {#if host === true}
-      <button>Start</button>
+    {#if host === true && players.length > 1}
+      <button on:click={startGame}>Start</button>
     {/if}
   {/if}
   {#each players as players}
     <p>{players}</p>
   {/each}
+  {#if InGame}
+    <Game />
+  {/if}
   <p style="color:red">{FeedbackText}</p>
 </main>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&display=swap');
+  :root {
+    font-family: 'Heebo', sans-serif;
+  }
+  .form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 300px;
+  }
+
+  .name-input {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .name-input p {
+    margin: 0;
+  }
+
+  input {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+  }
+
+  button {
+    padding: 5px 10px;
+    background-color: #000000;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #000000;
+  }
 </style>
