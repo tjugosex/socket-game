@@ -123,7 +123,9 @@
         <p>Name:</p>
         <input placeholder="Name" bind:value={$nickname} />
       </div>
-      <button style="width:fit-content"on:click={connectAsHost}>Connect as Host</button>
+      <button style="width:fit-content" on:click={connectAsHost}
+        >Connect as Host</button
+      >
 
       <form on:submit={onFormSubmit}>
         <input type="text" placeholder="Room code" bind:value={roomCode} />
@@ -137,16 +139,18 @@
         location.reload();
       }}>Back</button
     >
-
-    <h1>Number of players: {clientsInRoom}</h1>
-    <h1>Room code: {roomNumber}</h1>
-    {#if host === true && players.length > 1}
-      <button on:click={startGame}>Start</button>
+    {#if !InGame}
+      <h1>Room code: {roomNumber}</h1>
+      <h1>Number of players: {clientsInRoom}</h1>
+      {#each players as players}
+        <p>{players}</p>
+      {/each}
+      {#if host === true && players.length > 1}
+        <button on:click={startGame}>Start</button>
+      {/if}
     {/if}
   {/if}
-  {#each players as players}
-    <p>{players}</p>
-  {/each}
+
   {#if InGame}
     <Game />
   {/if}
@@ -154,9 +158,9 @@
 </main>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&display=swap');
+  @import url("https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&display=swap");
   :root {
-    font-family: 'Heebo', sans-serif;
+    font-family: "Heebo", sans-serif;
   }
   .form-container {
     display: flex;

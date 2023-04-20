@@ -36,6 +36,10 @@
     socket.emit("sendGif", $selectedImageUrl, otherPrompt, $nickname);
     waiting = true;
   }
+
+  function restartGame() {
+    gameState = 0;
+  }
 </script>
 
 {#if gameState === 0}
@@ -54,13 +58,15 @@
 
     <TenorGifs />
     {#if $selectedImageUrl}
-      <div class="image-container">
-        <img
-          src={$selectedImageUrl}
-          alt=""
-          style="width: 498px; height: 372px;"
-        />
+    <div class="image-prompt-container">
         <p class="prompt">{otherPrompt}</p>
+        <div class="image-container">
+          <img
+            src={$selectedImageUrl}
+            alt=""
+            style="width: 498px; aspect-ratio: 1 / 1; max-width:90%;margin:0px;padding:0px;"
+          />
+        </div>
       </div>
     {/if}
     <button on:click={OnGifSubmit}>Send</button>
@@ -70,39 +76,49 @@
 {/if}
 {#if gameState === 2}
   <h1>Results</h1>
-  <ul style="list-style-type: none;">
+  <ul style="list-style-type: none;margin:0px;padding:0px;">
     {#each gifAndPromptList as { selectedImageUrl, otherPrompt, nickname }}
-      <li><p>{nickname}: </p>
-        <div class="image-container">
+      <li style="margin:0px;padding:0px;">
+        <h1 style="margin-bottom:0px;padding:0px;">{nickname}:</h1>
+        <div class="image-container" >
+          <p class="prompt">{otherPrompt}</p>
           <img
             src={selectedImageUrl}
             alt=""
-            style="width: 498px; height: 372px; max-width:90vw;"
+            style="width: 498px; aspect-ratio: 1 / 1; max-width:90%;margin:0px;padding:0px;"
           />
-          <p class="prompt">{otherPrompt}</p>
         </div>
       </li>
     {/each}
   </ul>
-  
+  <button on:click={restartGame}>Restart</button>
 {/if}
 
 <style>
+  .image-prompt-container {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;margin:0px;padding:0px;
+  }
+
   .image-container {
     position: relative;
     display: inline-block;
+    margin:0px;padding:0px;
   }
 
   .prompt {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    margin: 0;
-    padding: 5px;
+    margin-bottom: 1px;
+    max-width: 90%;
+
     background-color: rgba(255, 255, 255, 0.8);
     color: rgb(0, 0, 0);
     font-size: 1.5rem;
     text-align: center;
+  }
+  input {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
   }
 </style>
