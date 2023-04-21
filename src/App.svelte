@@ -3,12 +3,12 @@
   import { io } from "socket.io-client";
   import { each } from "svelte/internal";
   import Game from "./lib/Game.svelte";
-  import { prompt, nickname } from "./stores.js";
+  import { prompt, nickname, host } from "./stores.js";
   import socket from "./socket.js";
   import TenorGifs from "./lib/TenorGifs.svelte";
-
+  import style from "./app.css";
   let playing: boolean = false;
-  let host: boolean = false;
+  
   let roomNumber;
   let clientsInRoom;
   let roomCode;
@@ -19,6 +19,7 @@
   let InGame: boolean = false;
 
   onMount(async () => {
+    $host = false;
     if (localStorage.getItem("clientId")) {
       clientId = localStorage.getItem("clientId");
     } else {
@@ -77,7 +78,7 @@
     socket.emit("room host", clientId, $nickname);
 
     playing = true;
-    host = true;
+    $host = true;
   }
   $: {
     if ($nickname && $nickname.trim() === "") {
@@ -117,50 +118,75 @@
 </script>
 
 <main>
-  {#if playing === false}
-    <div class="form-container">
-      <div class="name-input">
-        <p>Name:</p>
-        <input placeholder="Name" bind:value={$nickname} />
+  <div class="backgrounddiv">
+    {#if playing === false}
+      <div class="logo-container">
+        <img style="padding:0px;margin:0px" src="https://fav.farm/🤯" width="50px" />
+        <h1 style="padding:0px;margin:0px">Mikbox</h1>
       </div>
-      <button style="width:fit-content" on:click={connectAsHost}
-        >Connect as Host</button
-      >
+      <div class="form-container">
+        <div class="name-input">
+          
+          <input placeholder="Nickname" bind:value={$nickname} />
+        </div>
+        <form on:submit={onFormSubmit}>
+          <input type="text" placeholder="Room code" bind:value={roomCode} />
+          <button type="submit">Join</button>
+        </form>
+        <button style="width:fit-content" on:click={connectAsHost}
+          >Connect as Host</button
+        >
 
-      <form on:submit={onFormSubmit}>
-        <input type="text" placeholder="Room code" bind:value={roomCode} />
-        <button type="submit">Join</button>
-      </form>
-    </div>
-  {:else if playing === true}
-    <button
-      on:click={() => {
-        playing = false;
-        location.reload();
-      }}>Back</button
-    >
-    {#if !InGame}
-      <h1>Room code: {roomNumber}</h1>
-      <h1>Number of players: {clientsInRoom}</h1>
-      {#each players as players}
-        <p>{players}</p>
-      {/each}
-      {#if host === true && players.length > 1}
-        <button on:click={startGame}>Start</button>
+        
+      </div>
+    {:else if playing === true}
+      <button
+        on:click={() => {
+          playing = false;
+          location.reload();
+        }}>Back</button
+      >
+      {#if !InGame}
+        <h1>Room code: {roomNumber}</h1>
+        <h1>Number of players: {clientsInRoom}</h1>
+        {#each players as players}
+          <p>{players}</p>
+        {/each}
+        {#if $host === true && players.length > 1}
+          <button on:click={startGame}>Start</button>
+        {/if}
       {/if}
     {/if}
-  {/if}
 
-  {#if InGame}
-    <Game />
-  {/if}
-  <p style="color:red">{FeedbackText}</p>
+    {#if InGame}
+      <Game />
+    {/if}
+    <p style="color:red">{FeedbackText}</p>
+  </div>
 </main>
 
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&display=swap");
   :root {
     font-family: "Heebo", sans-serif;
+    background-color: #281C2D;
+    color: #281C2D;
+  }
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+  }
+  .backgrounddiv {
+    background-color: #BEAFC2;
+    padding: 15px;
+    border-radius: 3px;
+    max-width: 95vw;
+    min-width:300px;
+    box-shadow: #118ab2 0px 1px 4px, #118ab2 0px 0px 0px 3px;
   }
   .form-container {
     display: flex;
@@ -184,17 +210,13 @@
     border: 1px solid #ccc;
     border-radius: 3px;
   }
+  .logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding:0px;
+  
+  margin-bottom: 30px;
+}
 
-  button {
-    padding: 5px 10px;
-    background-color: #000000;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-  }
-
-  button:hover {
-    background-color: #000000;
-  }
 </style>

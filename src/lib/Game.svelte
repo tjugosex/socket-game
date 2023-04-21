@@ -2,43 +2,72 @@
   import { onMount } from "svelte";
   import { io } from "socket.io-client";
   import { each } from "svelte/internal";
-  import { prompt, selectedImageUrl, nickname } from "../stores.js";
+  import { prompt, selectedImageUrl, nickname, host } from "../stores.js";
   import socket from "../socket.js";
   import TenorGifs from "./TenorGifs.svelte";
   let gameState = 0;
   let Sendprompt = "";
   let waiting: boolean = false;
   let otherPrompt = "";
+  let promptAuthor = "";
   let gifAndPromptList = [];
+  let nicknamePointsList = [];
+  let currentNickname;
+  $: currentNickname = $nickname;
+
   onMount(async () => {
-    socket.on("updateGameState", (gamestate, randomPrompt) => {
-      waiting = false;
-      gameState = gamestate;
-      otherPrompt = randomPrompt;
-    });
+    socket.on(
+      "updateGameState",
+      (gamestate, randomPrompt, randomPromptAuthor) => {
+        waiting = false;
+        gameState = gamestate;
+        otherPrompt = randomPrompt;
+        promptAuthor = randomPromptAuthor;
+      }
+    );
 
     socket.on("updateGameState2", (gamestate, receivedList) => {
+      console.log("Received data from updateGameState2:", receivedList);
       waiting = false;
       gameState = gamestate;
 
       gifAndPromptList = receivedList;
     });
+
+    socket.on("updateGameState3", (gamestate, receivedList) => {
+      waiting = false;
+      gameState = gamestate;
+      receivedList.sort((a, b) => b.points - a.points);
+
+      nicknamePointsList = receivedList;
+    });
   });
 
   function OnPromptSubmit() {
     const result = $prompt.replace("...", Sendprompt);
-    socket.emit("sendPrompt", result);
+    socket.emit("sendPrompt", result, $nickname);
     Sendprompt = "";
     waiting = true;
   }
 
   function OnGifSubmit() {
-    socket.emit("sendGif", $selectedImageUrl, otherPrompt, $nickname);
+    socket.emit(
+      "sendGif",
+      $selectedImageUrl,
+      otherPrompt,
+      promptAuthor,
+      $nickname
+    );
     waiting = true;
   }
 
   function restartGame() {
-    gameState = 0;
+    socket.emit("restartGame");
+  }
+
+  function OnVoting(VotedNM, VotedPNM) {
+    socket.emit("vote", VotedNM, VotedPNM);
+    waiting = true;
   }
 </script>
 
@@ -58,67 +87,117 @@
 
     <TenorGifs />
     {#if $selectedImageUrl}
-    <div class="image-prompt-container">
-        <p class="prompt">{otherPrompt}</p>
+      <br />
+      <div class="image-prompt-container">
         <div class="image-container">
-          <img
-            src={$selectedImageUrl}
-            alt=""
-            style="width: 498px; aspect-ratio: 1 / 1; max-width:90%;margin:0px;padding:0px;"
-          />
+          <p class="prompt">{otherPrompt}</p>
+          <img src={$selectedImageUrl} alt="" style="margin:0px;padding:0px;" />
         </div>
+        <button on:click={OnGifSubmit}>Send</button>
       </div>
     {/if}
-    <button on:click={OnGifSubmit}>Send</button>
   {:else}
     <h1>Waiting...</h1>
   {/if}
 {/if}
 {#if gameState === 2}
-  <h1>Results</h1>
-  <ul style="list-style-type: none;margin:0px;padding:0px;">
-    {#each gifAndPromptList as { selectedImageUrl, otherPrompt, nickname }}
-      <li style="margin:0px;padding:0px;">
-        <h1 style="margin-bottom:0px;padding:0px;">{nickname}:</h1>
-        <div class="image-container" >
-          <p class="prompt">{otherPrompt}</p>
-          <img
-            src={selectedImageUrl}
-            alt=""
-            style="width: 498px; aspect-ratio: 1 / 1; max-width:90%;margin:0px;padding:0px;"
-          />
-        </div>
+  {#if waiting === false}
+    <h1>Results</h1>
+    <ul style="list-style-type: none;margin:0px;padding:0px;">
+      {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }}
+        <li style="margin:0px;padding:0px;">
+          <div class="image-container">
+            <p class="prompt">{otherPrompt}</p>
+            <img
+              src={selectedImageUrl}
+              alt=""
+              style="margin:0px;padding:0px;"
+            />
+            {#if currentNickname != nickname}
+              <button on:click={() => OnVoting(nickname, otherPromptAuthor)}
+                >Vote</button
+              >
+            {/if}
+          </div>
+        </li>
+      {/each}
+    </ul>
+  {:else}
+    <h1>Waiting...</h1>
+  {/if}
+{/if}
+{#if gameState === 3}
+  <h1>Points</h1>
+  <ol class="points-list">
+    {#each nicknamePointsList as { nickname, points }}
+      <li class="points-list-item">
+        <span>{nickname}: {points} points</span>
       </li>
     {/each}
-  </ul>
-  <button on:click={restartGame}>Restart</button>
+  </ol>
+  {#if $host === true}
+    <button on:click={restartGame}>Continue</button>{/if}
 {/if}
 
 <style>
   .image-prompt-container {
     display: inline-flex;
     flex-direction: column;
-    align-items: center;margin:0px;padding:0px;
+    align-items: center;
+    margin: 0px;
+    padding: 0px;
   }
 
   .image-container {
     position: relative;
     display: inline-block;
-    margin:0px;padding:0px;
+    margin: 0px;
+    padding: 0px;
   }
 
   .prompt {
     margin-bottom: 1px;
-    max-width: 90%;
-
+    width: 498px;
     background-color: rgba(255, 255, 255, 0.8);
     color: rgb(0, 0, 0);
     font-size: 1.5rem;
     text-align: center;
   }
+
+  img {
+    width: 498px;
+    height: 375px;
+    margin: 0px;
+    padding: 0px;
+  }
+
   input {
     padding: 5px;
     border: 1px solid #ccc;
     border-radius: 3px;
+  }
+  .points-list {
+    list-style-type: decimal;
+    margin: 30px;
+    padding: 0;
+  }
+
+  .points-list-item {
+    margin: 8px 0;
+    padding: 0;
+    font-size: 1.2rem;
+  }
+
+  /* Media query for mobile devices */
+  @media (max-width: 767px) {
+    .prompt {
+      width: 90vw;
+      font-size: 1.2rem;
+    }
+
+    img {
+      width: 90vw;
+      height: auto;
+    }
   }
 </style>

@@ -42,7 +42,8 @@
 </script>
 
 <div
-  style="border: solid gray 1px;padding:3px; max-width: 400px; position: relative;
+  class="gifbackground"
+  style="padding:3px; max-width: 400px; position: relative;
 display: inline-block;
 text-align: center;"
 >
@@ -65,3 +66,11 @@ text-align: center;"
   </div>
 </div>
 {#if $selectedImageUrl}{/if}
+
+<style>
+  .gifbackground{
+    background-color: #8155BA;
+    box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+    border-radius: 4px;
+  }
+</style>
