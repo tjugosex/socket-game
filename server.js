@@ -183,10 +183,13 @@ io.on("connection", (socket) => {
     const gameState = 0;
   
     for (const clientId of uniqueClientIds) {
-      console.log(`Sending gameState ${gameState} to client ${clientId}`);
+      const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+      console.log(`Sending prompt "${randomPrompt}" to client ${clientId}`);
+      io.to(clientId).emit("receivePrompt", randomPrompt);
       io.to(clientId).emit("updateGameState", gameState);
     }
   });
+  
   
   
   socket.on("client connected", (clientId) => {

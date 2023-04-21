@@ -114,6 +114,7 @@
               style="margin:0px;padding:0px;"
             />
             {#if currentNickname != nickname}
+            <br>
               <button on:click={() => OnVoting(nickname, otherPromptAuthor)}
                 >Vote</button
               >
