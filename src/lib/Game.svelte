@@ -79,6 +79,7 @@
   function OnVoting(VotedNM, VotedPNM) {
     socket.emit("vote", VotedNM, VotedPNM);
     waiting = true;
+    currentIndex = 0;
   }
 </script>
 
