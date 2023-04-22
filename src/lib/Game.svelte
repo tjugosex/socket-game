@@ -13,6 +13,17 @@
   let gifAndPromptList = [];
   let nicknamePointsList = [];
   let currentNickname;
+  let currentIndex = 0;
+
+  const onNext = () => {
+    currentIndex++;
+  };
+
+  const onPrev = () => {
+    if (currentIndex > 0) {
+      currentIndex--;
+    }
+  };
   $: currentNickname = $nickname;
 
   onMount(async () => {
@@ -76,11 +87,19 @@
     <h1>{$prompt}</h1>
     <form on:submit|preventDefault={OnPromptSubmit}>
       <input type="text" placeholder="" bind:value={Sendprompt} />
-      <button type="submit">Send</button>
-    </form>{:else}
+      {#if Sendprompt != ""}
+        <button type="submit">Send</button>
+      {:else}
+        <button type="submit" disabled style="filter: grayscale(100%);"
+          >Send</button
+        >
+      {/if}
+    </form>
+  {:else}
     <h1>Waiting...</h1>
   {/if}
 {/if}
+
 {#if gameState === 1}
   {#if waiting === false}
     <h1>{otherPrompt}</h1>
@@ -102,26 +121,45 @@
 {/if}
 {#if gameState === 2}
   {#if waiting === false}
-    <h1>Results</h1>
     <ul style="list-style-type: none;margin:0px;padding:0px;">
-      {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }}
-        <li style="margin:0px;padding:0px;">
-          <div class="image-container">
-            <p class="prompt">{otherPrompt}</p>
-            <img
-              src={selectedImageUrl}
-              alt=""
-              style="margin:0px;padding:0px;"
-            />
-            {#if currentNickname != nickname}
-            <br>
-              <button on:click={() => OnVoting(nickname, otherPromptAuthor)}
-                >Vote</button
-              >
-            {/if}
-          </div>
-        </li>
-      {/each}
+      {#if currentIndex < gifAndPromptList.length}
+        {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }, index}
+          {#if index === currentIndex}
+            <li style="margin:0px;padding:0px;">
+              <div class="image-container">
+                <p class="prompt">{otherPrompt}</p>
+                <img
+                  src={selectedImageUrl}
+                  alt=""
+                  style="margin:0px;padding:0px;"
+                />
+
+                <div>
+                  <button on:click={onNext}>Next</button>
+                </div>
+              </div>
+            </li>
+          {/if}
+        {/each}
+      {:else}
+        {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }}
+          {#if currentNickname != nickname}
+            <li style="margin:0px;padding:0px;">
+              <div class="image-container">
+                <p class="prompt">{otherPrompt}</p>
+                <img
+                  src={selectedImageUrl}
+                  alt=""
+                  style="margin:0px;padding:0px;"
+                />
+
+                <br />
+                <button on:click={() => OnVoting(nickname, otherPromptAuthor)}
+                  >Vote</button
+                >
+              </div>
+            </li>{/if}
+        {/each}{/if}
     </ul>
   {:else}
     <h1>Waiting...</h1>
