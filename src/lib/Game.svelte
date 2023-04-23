@@ -5,6 +5,9 @@
   import { prompt, selectedImageUrl, nickname, host } from "../stores.js";
   import socket from "../socket.js";
   import TenorGifs from "./TenorGifs.svelte";
+  import { fly } from "svelte/transition";
+  import { backOut } from "svelte/easing";
+  import Cube from "./Cube.svelte";
   let gameState = 0;
   let Sendprompt = "";
   let waiting: boolean = false;
@@ -14,10 +17,12 @@
   let nicknamePointsList = [];
   let currentNickname;
   let currentIndex = 0;
+  let prevIndex = -1;
 
-  const onNext = () => {
-    currentIndex++;
-  };
+  function onNext() {
+    socket.emit("socketcarousel");
+    prevIndex = currentIndex;
+  }
 
   const onPrev = () => {
     if (currentIndex > 0) {
@@ -25,7 +30,7 @@
     }
   };
   $: currentNickname = $nickname;
-
+  $: applyAnimation = (index) => index === currentIndex && index !== prevIndex;
   onMount(async () => {
     socket.on(
       "updateGameState",
@@ -52,6 +57,9 @@
 
       nicknamePointsList = receivedList;
     });
+    socket.on("carousel", () => {
+      currentIndex++;
+    });
   });
 
   function OnPromptSubmit() {
@@ -77,7 +85,7 @@
   }
 
   function OnVoting(VotedNM, VotedPNM) {
-    socket.emit("vote", VotedNM, VotedPNM);
+    socket.emit("vote", VotedNM, VotedPNM, $nickname);
     waiting = true;
     currentIndex = 0;
   }
@@ -86,7 +94,8 @@
 {#if gameState === 0}
   {#if waiting === false}
     <h1>{$prompt}</h1>
-    <form on:submit|preventDefault={OnPromptSubmit}>
+    <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+    <form on:submit|preventDefault={OnPromptSubmit} >
       <input type="text" placeholder="" bind:value={Sendprompt} />
       {#if Sendprompt != ""}
         <button type="submit">Send</button>
@@ -95,16 +104,20 @@
           >Send</button
         >
       {/if}
-    </form>
+    </form></div>
   {:else}
-    <h1>Waiting...</h1>
+    <h1>Waiting...</h1> 
   {/if}
+  <div style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;">
+    <Cube/>
+  </div>
+  
 {/if}
 
 {#if gameState === 1}
   {#if waiting === false}
     <h1>{otherPrompt}</h1>
-
+    
     <TenorGifs />
     {#if $selectedImageUrl}
       <br />
@@ -118,30 +131,39 @@
     {/if}
   {:else}
     <h1>Waiting...</h1>
+    <div style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;">
+      <Cube/>
+    </div>
   {/if}
+  
 {/if}
 {#if gameState === 2}
   {#if waiting === false}
     <ul style="list-style-type: none;margin:0px;padding:0px;">
       {#if currentIndex < gifAndPromptList.length}
-        {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }, index}
-          {#if index === currentIndex}
-            <li style="margin:0px;padding:0px;">
-              <div class="image-container">
-                <p class="prompt">{otherPrompt}</p>
-                <img
-                  src={selectedImageUrl}
-                  alt=""
-                  style="margin:0px;padding:0px;"
-                />
+      {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }, index}
+  {#if index === currentIndex}
+    <li style="margin:0px;padding:0px;">
+      <div
+        class="image-containerc"
+        in:fly={applyAnimation(index) ? { y: 100, easing: backOut } : null}
+      >
+        <p class="prompt">{otherPrompt}</p>
+        <img
+          src={selectedImageUrl}
+          alt=""
+          style="margin:0px;padding:0px;"
+        />
 
-                <div>
-                  <button on:click={onNext}>Next</button>
-                </div>
-              </div>
-            </li>
+        <div>
+          {#if $host === true}
+            <button on:click={onNext}>Next</button>
           {/if}
-        {/each}
+        </div>
+      </div>
+    </li>
+  {/if}
+{/each}
       {:else}
         {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }}
           {#if currentNickname != nickname}
@@ -164,6 +186,9 @@
     </ul>
   {:else}
     <h1>Waiting...</h1>
+    <div style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;">
+      <Cube/>
+    </div>
   {/if}
 {/if}
 {#if gameState === 3}
@@ -193,6 +218,14 @@
     display: inline-block;
     margin: 0px;
     padding: 0px;
+  }
+
+  .image-containerc {
+    position: relative;
+    display: inline-block;
+    margin: 0px;
+    padding: 0px;
+    animation: carousel;
   }
 
   .prompt {

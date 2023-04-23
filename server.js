@@ -127,7 +127,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("vote", (votedNM, votedPNM) => {
+  socket.on("vote", (votedNM, votedPNM, voter) => {
     const room = Array.from(clientRooms.get(socket.id))[0];
     const uniqueClientIds = getUniqueClientIds(room);
   
@@ -149,7 +149,12 @@ io.on("connection", (socket) => {
     }
   
     addPoints(votedNM, 100);
-    addPoints(votedPNM, 50);
+    if (votedPNM != voter)
+    {
+      
+      addPoints(votedPNM, 50);
+    }
+    
   
     // Check if all clients have voted
     if (hasClientVoted.size === 0) {
@@ -189,7 +194,18 @@ io.on("connection", (socket) => {
       io.to(clientId).emit("updateGameState", gameState);
     }
   });
+  socket.on("socketcarousel", ()=>{
+    const room = Array.from(clientRooms.get(socket.id))[0];
+    const uniqueClientIds = getUniqueClientIds(room);
+    
   
+    for (const clientId of uniqueClientIds) {
+      
+      
+      io.to(clientId).emit("carousel", );
+      
+    }
+  });
   
   
   socket.on("client connected", (clientId) => {

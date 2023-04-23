@@ -48,7 +48,7 @@ display: inline-block;
 text-align: center;"
 >
   <input
-    style="margin:0px;padding:0px;"
+    
     bind:value={search_term}
     placeholder="Search"
     on:input={grabData}
@@ -72,5 +72,12 @@ text-align: center;"
     background-color: #8155BA;
     box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
     border-radius: 4px;
+  }
+
+  input {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    margin:5px;
   }
 </style>

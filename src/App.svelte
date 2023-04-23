@@ -3,6 +3,7 @@
   import { io } from "socket.io-client";
   import { each } from "svelte/internal";
   import Game from "./lib/Game.svelte";
+  import Cube from "./lib/Cube.svelte";
   import { prompt, nickname, host } from "./stores.js";
   import socket from "./socket.js";
   import TenorGifs from "./lib/TenorGifs.svelte";
@@ -123,6 +124,7 @@
       <div class="logo-container">
         <img style="padding:0px;margin:0px" src="https://fav.farm/🤯" width="50px" />
         <h1 style="padding:0px;margin:0px">Mikbox</h1>
+        
       </div>
       <div class="form-container">
         <div class="name-input">
@@ -149,6 +151,7 @@
       {#if !InGame}
         <h1>Room code: {roomNumber}</h1>
         <h1>Number of players: {clientsInRoom}</h1>
+        <p style="font-weight:bold">Players:</p>
         {#each players as players}
           <p>{players}</p>
         {/each}
@@ -160,7 +163,9 @@
 
     {#if InGame}
       <Game />
+
     {/if}
+    
     <p style="color:red">{FeedbackText}</p>
   </div>
 </main>
