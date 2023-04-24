@@ -8,6 +8,7 @@
   import { fly } from "svelte/transition";
   import { backOut } from "svelte/easing";
   import Cube from "./Cube.svelte";
+  import confetti from "canvas-confetti";
   let gameState = 0;
   let Sendprompt = "";
   let waiting: boolean = false;
@@ -18,6 +19,7 @@
   let currentNickname;
   let currentIndex = 0;
   let prevIndex = -1;
+  let round = 0;
 
   function onNext() {
     socket.emit("socketcarousel");
@@ -31,6 +33,9 @@
   };
   $: currentNickname = $nickname;
   $: applyAnimation = (index) => index === currentIndex && index !== prevIndex;
+  $: if (gameState === 3 && round >= 4) {
+    showConfetti();
+  }
   onMount(async () => {
     socket.on(
       "updateGameState",
@@ -39,6 +44,7 @@
         gameState = gamestate;
         otherPrompt = randomPrompt;
         promptAuthor = randomPromptAuthor;
+        round++;
       }
     );
 
@@ -57,6 +63,7 @@
 
       nicknamePointsList = receivedList;
     });
+
     socket.on("carousel", () => {
       currentIndex++;
     });
@@ -84,40 +91,59 @@
     socket.emit("restartGame");
   }
 
+  function finishGame() {
+    socket.emit("finishGame");
+  }
+
   function OnVoting(VotedNM, VotedPNM) {
     socket.emit("vote", VotedNM, VotedPNM, $nickname);
     waiting = true;
     currentIndex = 0;
+  }
+
+  function showConfetti() {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: {
+        x: 0.5,
+        y: 0.5,
+      },
+    });
   }
 </script>
 
 {#if gameState === 0}
   {#if waiting === false}
     <h1>{$prompt}</h1>
-    <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
-    <form on:submit|preventDefault={OnPromptSubmit} >
-      <input type="text" placeholder="" bind:value={Sendprompt} />
-      {#if Sendprompt != ""}
-        <button type="submit">Send</button>
-      {:else}
-        <button type="submit" disabled style="filter: grayscale(100%);"
-          >Send</button
-        >
-      {/if}
-    </form></div>
+    <div
+      style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;"
+    >
+      <form on:submit|preventDefault={OnPromptSubmit}>
+        <input type="text" placeholder="" bind:value={Sendprompt} />
+        {#if Sendprompt != ""}
+          <button type="submit">Send</button>
+        {:else}
+          <button type="submit" disabled style="filter: grayscale(100%);"
+            >Send</button
+          >
+        {/if}
+      </form>
+    </div>
   {:else}
-    <h1>Waiting...</h1> 
+    <h1>Waiting...</h1>
   {/if}
-  <div style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;">
-    <Cube/>
+  <div
+    style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;"
+  >
+    <Cube />
   </div>
-  
 {/if}
 
 {#if gameState === 1}
   {#if waiting === false}
     <h1>{otherPrompt}</h1>
-    
+
     <TenorGifs />
     {#if $selectedImageUrl}
       <br />
@@ -131,44 +157,26 @@
     {/if}
   {:else}
     <h1>Waiting...</h1>
-    <div style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;">
-      <Cube/>
+    <div
+      style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;"
+    >
+      <Cube />
     </div>
   {/if}
-  
 {/if}
 {#if gameState === 2}
   {#if waiting === false}
     <ul style="list-style-type: none;margin:0px;padding:0px;">
       {#if currentIndex < gifAndPromptList.length}
-      {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }, index}
-  {#if index === currentIndex}
-    <li style="margin:0px;padding:0px;">
-      <div
-        class="image-containerc"
-        in:fly={applyAnimation(index) ? { y: 100, easing: backOut } : null}
-      >
-        <p class="prompt">{otherPrompt}</p>
-        <img
-          src={selectedImageUrl}
-          alt=""
-          style="margin:0px;padding:0px;"
-        />
-
-        <div>
-          {#if $host === true}
-            <button on:click={onNext}>Next</button>
-          {/if}
-        </div>
-      </div>
-    </li>
-  {/if}
-{/each}
-      {:else}
-        {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }}
-          {#if currentNickname != nickname}
+        {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }, index}
+          {#if index === currentIndex}
             <li style="margin:0px;padding:0px;">
-              <div class="image-container">
+              <div
+                class="image-containerc"
+                in:fly={applyAnimation(index)
+                  ? { y: 100, easing: backOut }
+                  : null}
+              >
                 <p class="prompt">{otherPrompt}</p>
                 <img
                   src={selectedImageUrl}
@@ -176,22 +184,47 @@
                   style="margin:0px;padding:0px;"
                 />
 
+                <div>
+                  {#if $host === true}
+                    <button on:click={onNext}>Next</button>
+                  {/if}
+                </div>
+              </div>
+            </li>
+          {/if}
+        {/each}
+      {:else}
+        <div class="votingblock">
+          {#each gifAndPromptList as { selectedImageUrl, otherPrompt, otherPromptAuthor, nickname }}
+            {#if currentNickname != nickname}
+              <div class="image-containeri">
+                <p class="prompti">{otherPrompt}</p>
+                <img
+                  width="100"
+                  src={selectedImageUrl}
+                  alt=""
+                  style="margin:0px;padding:0px; width:150px; height:150px"
+                />
+
                 <br />
                 <button on:click={() => OnVoting(nickname, otherPromptAuthor)}
                   >Vote</button
                 >
               </div>
-            </li>{/if}
-        {/each}{/if}
+            {/if}
+          {/each}
+        </div>{/if}
     </ul>
   {:else}
     <h1>Waiting...</h1>
-    <div style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;">
-      <Cube/>
+    <div
+      style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;"
+    >
+      <Cube />
     </div>
   {/if}
 {/if}
-{#if gameState === 3}
+{#if gameState === 3 && round < 4}
   <h1>Points</h1>
   <ol class="points-list">
     {#each nicknamePointsList as { nickname, points }}
@@ -203,8 +236,24 @@
   {#if $host === true}
     <button on:click={restartGame}>Continue</button>{/if}
 {/if}
+{#if gameState === 3 && round >= 4}
+  {#if nicknamePointsList.length > 0}
+    <h1>WINNER: {nicknamePointsList[0].nickname}</h1>
+  {/if}
+  <ol class="points-list">
+    {#each nicknamePointsList as { nickname, points }}
+      <li class="points-list-item">
+        <span>{nickname}: {points} points</span>
+      </li>
+    {/each}
+  </ol>
+{/if}
 
 <style>
+  .divblock {
+    display: inline-flex;
+    flex-direction: column;
+  }
   .image-prompt-container {
     display: inline-flex;
     flex-direction: column;
@@ -217,6 +266,13 @@
     position: relative;
     display: inline-block;
     margin: 0px;
+    padding: 0px;
+  }
+  .image-containeri {
+    width: 150px;
+    position: relative;
+    display: inline-block;
+    margin: 3px;
     padding: 0px;
   }
 
@@ -234,6 +290,14 @@
     background-color: rgba(255, 255, 255, 0.8);
     color: rgb(0, 0, 0);
     font-size: 1.5rem;
+    text-align: center;
+  }
+  .prompti {
+    margin-bottom: 1px;
+    width: 150px;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: rgb(0, 0, 0);
+    font-size: 0.5rem;
     text-align: center;
   }
 
@@ -271,6 +335,13 @@
     img {
       width: 90vw;
       height: auto;
+    }
+    .image-containeri {
+      width: 150px;
+      position: relative;
+      display: inline-block;
+      margin: 0px;
+      padding: 0px;
     }
   }
 </style>

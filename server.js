@@ -194,6 +194,9 @@ io.on("connection", (socket) => {
       io.to(clientId).emit("updateGameState", gameState);
     }
   });
+  
+
+
   socket.on("socketcarousel", ()=>{
     const room = Array.from(clientRooms.get(socket.id))[0];
     const uniqueClientIds = getUniqueClientIds(room);

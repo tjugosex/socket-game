@@ -223,5 +223,15 @@
   
   margin-bottom: 30px;
 }
-
+@media (max-width: 767px){
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    width: 100%;
+    padding-top: 4px;
+  }
+}
 </style>

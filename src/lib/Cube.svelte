@@ -32,16 +32,5 @@
       transform: rotateX(-0.1turn) rotateY(1turn);
     }
   }
-  #cube > div > div {
-    animation: un-spin 10s linear infinite;
-  }
-
-  @keyframes un-spin {
-    from {
-      transform: rotateY(0turn);
-    }
-    to {
-      transform: rotateY(-1turn);
-    }
-  }
+  
 </style>

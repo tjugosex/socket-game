@@ -54,9 +54,10 @@ text-align: center;"
     on:input={grabData}
   />
 
-  <div style="margin:0px;padding:0px;">
+  <div style="margin:0px;padding:0px; background-color:white; gap:0px">
     {#each top_10_gifs as gif}
       <img
+        class="gifimage"
         src={gif.media[0].nanogif.url}
         alt=""
         style="width: 150px; height: 150px;cursor: pointer;"
@@ -79,5 +80,16 @@ text-align: center;"
     border: 1px solid #ccc;
     border-radius: 3px;
     margin:5px;
+  }
+  .gifimage{
+    margin: 3px;
+    padding: 0;
+    border: solid #281C2D 4px;
+    border-radius: 5px;
+  }
+  .gifimage:hover{
+    
+    border: solid #dc9af8 4px;
+    
   }
 </style>
