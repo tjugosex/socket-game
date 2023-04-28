@@ -9,6 +9,9 @@
   import { backOut } from "svelte/easing";
   import Cube from "./Cube.svelte";
   import confetti from "canvas-confetti";
+  import '../app.postcss';
+  import '../theme.postcss';
+  import '@skeletonlabs/skeleton/styles/all.css';
   let gameState = 0;
   let Sendprompt = "";
   let waiting: boolean = false;
@@ -45,6 +48,7 @@
         otherPrompt = randomPrompt;
         promptAuthor = randomPromptAuthor;
         round++;
+        $selectedImageUrl = "";
       }
     );
 
@@ -115,23 +119,23 @@
 
 {#if gameState === 0}
   {#if waiting === false}
-    <h1>{$prompt}</h1>
+    <h1 style="margin:10px">{$prompt}</h1>
     <div
       style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;"
     >
       <form on:submit|preventDefault={OnPromptSubmit}>
-        <input type="text" placeholder="" bind:value={Sendprompt} />
+        <input style="margin-top: 20px; margin-bottom:4px"class="input input text-secondary-900"type="text" placeholder="" bind:value={Sendprompt} />
         {#if Sendprompt != ""}
-          <button type="submit">Send</button>
+          <button class="btn variant-glass" type="submit">Send</button>
         {:else}
-          <button type="submit" disabled style="filter: grayscale(100%);"
+          <button class="btn variant-glass" type="submit" disabled style="filter: grayscale(100%);"
             >Send</button
           >
         {/if}
       </form>
     </div>
   {:else}
-    <h1>Waiting...</h1>
+    <h1 style="margin:10px">Waiting...</h1>
   {/if}
   <div
     style="width: 100%; height: 100%; margin-top: 50px; display: flex; justify-content: center; align-items: center;"
@@ -142,7 +146,7 @@
 
 {#if gameState === 1}
   {#if waiting === false}
-    <h1>{otherPrompt}</h1>
+    <h1 style="margin:10px">{otherPrompt}</h1>
 
     <TenorGifs />
     {#if $selectedImageUrl}
@@ -150,9 +154,9 @@
       <div class="image-prompt-container">
         <div class="image-container">
           <p class="prompt">{otherPrompt}</p>
-          <img src={$selectedImageUrl} alt="" style="margin:0px;padding:0px;" />
+          <img src={$selectedImageUrl} alt="" width=350 style="margin:0px;padding:0px;width:350px" />
         </div>
-        <button on:click={OnGifSubmit}>Send</button>
+        <button class="btn variant-glass" on:click={OnGifSubmit}>Send</button>
       </div>
     {/if}
   {:else}
@@ -179,6 +183,7 @@
               >
                 <p class="prompt">{otherPrompt}</p>
                 <img
+                width=350px
                   src={selectedImageUrl}
                   alt=""
                   style="margin:0px;padding:0px;"
@@ -186,7 +191,7 @@
 
                 <div>
                   {#if $host === true}
-                    <button on:click={onNext}>Next</button>
+                    <button class="btn variant-glass" on:click={onNext}>Next</button>
                   {/if}
                 </div>
               </div>
@@ -207,7 +212,7 @@
                 />
 
                 <br />
-                <button on:click={() => OnVoting(nickname, otherPromptAuthor)}
+                <button class="btn variant-glass" on:click={() => OnVoting(nickname, otherPromptAuthor)}
                   >Vote</button
                 >
               </div>
@@ -234,7 +239,7 @@
     {/each}
   </ol>
   {#if $host === true}
-    <button on:click={restartGame}>Continue</button>{/if}
+    <button class="btn variant-glass" on:click={restartGame}>Continue</button>{/if}
 {/if}
 {#if gameState === 3 && round >= 4}
   {#if nicknamePointsList.length > 0}
@@ -258,7 +263,7 @@
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    margin: 0px;
+    margin-top: 10px;
     padding: 0px;
   }
 
@@ -279,19 +284,20 @@
   .image-containerc {
     position: relative;
     display: inline-block;
-    margin: 0px;
+    margin: 5px;
     padding: 0px;
     animation: carousel;
+    width: 350px;
   }
-
   .prompt {
     margin-bottom: 1px;
-    width: 498px;
+    width: 350px;
     background-color: rgba(255, 255, 255, 0.8);
     color: rgb(0, 0, 0);
     font-size: 1.5rem;
     text-align: center;
   }
+  
   .prompti {
     margin-bottom: 1px;
     width: 150px;
@@ -301,18 +307,9 @@
     text-align: center;
   }
 
-  img {
-    width: 498px;
-    height: 375px;
-    margin: 0px;
-    padding: 0px;
-  }
+  
 
-  input {
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-  }
+  
   .points-list {
     list-style-type: decimal;
     margin: 30px;
@@ -326,16 +323,19 @@
   }
 
   /* Media query for mobile devices */
-  @media (max-width: 767px) {
-    .prompt {
-      width: 90vw;
-      font-size: 1.2rem;
-    }
-
-    img {
-      width: 90vw;
-      height: auto;
-    }
+  @media (max-width: 400px) {
+    
+    .image-container {
+    width:75vw;
+  }
+  .image-containerc {
+    width:75vw;
+  }
+  .prompt {
+    width:75vw;
+  }
+  
+    
     .image-containeri {
       width: 150px;
       position: relative;

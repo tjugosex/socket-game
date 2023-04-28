@@ -7,7 +7,9 @@
   import { prompt, nickname, host } from "./stores.js";
   import socket from "./socket.js";
   import TenorGifs from "./lib/TenorGifs.svelte";
-  import style from "./app.css";
+  import './app.postcss';
+  import './theme.postcss';
+  import '@skeletonlabs/skeleton/styles/all.css';
   let playing: boolean = false;
   
   let roomNumber;
@@ -117,9 +119,9 @@
     connectAsClient(roomCode);
   }
 </script>
-
-<main>
-  <div class="backgrounddiv">
+<body class="text-secondary-50">
+<main >
+  <div class="backgrounddiv variant-ghost-surface">
     {#if playing === false}
       <div class="logo-container">
         <img style="padding:0px;margin:0px" src="https://fav.farm/🤯" width="50px" />
@@ -127,22 +129,23 @@
         
       </div>
       <div class="form-container">
-        <div class="name-input">
-          
-          <input placeholder="Nickname" bind:value={$nickname} />
+        <div class="">
+          <label class="label"><span>Name: <input class="input text-secondary-900" type="text"placeholder="Nickname" bind:value={$nickname} /></span>
+          </label>
         </div>
         <form on:submit={onFormSubmit}>
-          <input type="text" placeholder="Room code" bind:value={roomCode} />
-          <button type="submit">Join</button>
+          <span>Room code: <input class="input text-secondary-900" type="text" placeholder="Room code" bind:value={roomCode} /></span>
+          
+          <button style="margin-top:4px"class="btn variant-glass" type="submit">Join</button>
         </form>
-        <button style="width:fit-content" on:click={connectAsHost}
+        <button class="btn variant-glass" style="width:fit-content" on:click={connectAsHost}
           >Connect as Host</button
         >
 
         
       </div>
     {:else if playing === true}
-      <button
+      <button class="btn variant-glass" style="margin-bottom:20px;"
         on:click={() => {
           playing = false;
           location.reload();
@@ -156,7 +159,7 @@
           <p>{players}</p>
         {/each}
         {#if $host === true && players.length > 1}
-          <button on:click={startGame}>Start</button>
+          <button class="btn variant-glass" on:click={startGame}>Start</button>
         {/if}
       {/if}
     {/if}
@@ -168,15 +171,24 @@
     
     <p style="color:red">{FeedbackText}</p>
   </div>
-</main>
+</main></body>
 
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&display=swap");
   :root {
     font-family: "Heebo", sans-serif;
-    background-color: #281C2D;
-    color: #281C2D;
+    color: white;
   }
+  body{
+    background-color:rgb(20, 0, 75);
+background-image:
+radial-gradient(at 56% 89%, hsla(251,50%,35%,1) 0px, transparent 50%),
+radial-gradient(at 60% 89%, hsla(323,50%,35%,1) 0px, transparent 50%),
+radial-gradient(at 58% 3%, hsla(245,50%,35%,1) 0px, transparent 50%),
+radial-gradient(at 15% 56%, hsla(267,50%,35%,1) 0px, transparent 50%),
+radial-gradient(at 6% 37%, hsla(116,50%,35%,1) 0px, transparent 50%),
+radial-gradient(at 18% 21%, hsla(345,50%,35%,1) 0px, transparent 50%),
+radial-gradient(at 64% 45%, hsla(16,50%,35%,1) 0px, transparent 50%);  }
   main {
     display: flex;
     flex-direction: column;
@@ -186,12 +198,12 @@
     width: 100%;
   }
   .backgrounddiv {
-    background-color: #BEAFC2;
+    
     padding: 15px;
     border-radius: 3px;
     max-width: 95vw;
     min-width:300px;
-    box-shadow: #118ab2 0px 1px 4px, #118ab2 0px 0px 0px 3px;
+    
   }
   .form-container {
     display: flex;
@@ -210,11 +222,7 @@
     margin: 0;
   }
 
-  input {
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-  }
+  
   .logo-container {
   display: flex;
   align-items: center;

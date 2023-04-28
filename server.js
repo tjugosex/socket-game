@@ -187,13 +187,25 @@ io.on("connection", (socket) => {
     const uniqueClientIds = getUniqueClientIds(room);
     const gameState = 0;
   
+    let availablePrompts = [...prompts];
+  
     for (const clientId of uniqueClientIds) {
-      const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+      const randomIndex = Math.floor(Math.random() * availablePrompts.length);
+      const randomPrompt = availablePrompts[randomIndex];
       console.log(`Sending prompt "${randomPrompt}" to client ${clientId}`);
       io.to(clientId).emit("receivePrompt", randomPrompt);
       io.to(clientId).emit("updateGameState", gameState);
+  
+      
+      availablePrompts.splice(randomIndex, 1);
+  
+      
+      if (availablePrompts.length === 0) {
+        availablePrompts = [...prompts];
+      }
     }
   });
+  
   
 
 
@@ -247,8 +259,15 @@ io.on("connection", (socket) => {
     socket.nickname = nickname;
     if (io.sockets.adapter.rooms.has(room)) {
       const uniqueClientIds = getUniqueClientIds(room);
-
-    
+  
+      // Check for existing nickname in the room
+      const existingNicknames = roomNicknames.get(room) || new Set();
+      if (existingNicknames.has(nickname)) {
+        const feedback = "A user with that nickname already exists in the room";
+        io.to(socket.id).emit("join failed", feedback);
+        return;
+      }
+  
       if (!uniqueClientIds.has(socket.userId)) {
         if (!clientRooms.has(socket.id)) {
           clientRooms.set(socket.id, new Set());
@@ -257,10 +276,10 @@ io.on("connection", (socket) => {
         clientRooms.get(socket.id).add(room);
         socket.join(socket.userId);
         io.to(socket.userId).emit("room number", room);
-
+  
         const updatedUniqueClientIds = getUniqueClientIds(room);
         const numberOfClients = updatedUniqueClientIds.size;
-
+  
         const roomInstance = io.sockets.adapter.rooms.get(room);
         if (roomInstance) {
           if (!roomNicknames.has(room)) {
@@ -276,16 +295,15 @@ io.on("connection", (socket) => {
         }
         console.log(`Client ID: ${socket.userId} with nickname: ${nickname} joined room: ${room}`);
       } else {
-      
         const feedback = "You are already in this room";
         io.to(socket.id).emit("join failed", feedback);
       }
     } else {
-    
       const feedback = "No room with that name";
       io.to(socket.id).emit("join failed", feedback);
     }
   });
+  
 
   socket.on("disconnect", () => {
     console.log(`User at IP ${clientIpAddress} disconnected`);
@@ -324,19 +342,30 @@ io.on("connection", (socket) => {
   socket.on('start game', () => {
     for (const room of clientRooms.get(socket.id)) {
       io.to(room).emit("startGame", true);
-
-
+  
       const roomInstance = clientRooms.get(room);
       if (roomInstance) {
         roomInstance.gameStarted = true;
       }
-
+  
       const uniqueClientIds = getUniqueClientIds(room);
       console.log("Unique client IDs in room:", uniqueClientIds);
+  
+      let availablePrompts = [...prompts]; 
+  
       for (const clientId of uniqueClientIds) {
-        const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+        const randomIndex = Math.floor(Math.random() * availablePrompts.length);
+        const randomPrompt = availablePrompts[randomIndex];
         console.log(`Sending prompt "${randomPrompt}" to client ${clientId}`);
         io.to(clientId).emit("receivePrompt", randomPrompt);
+  
+    
+        availablePrompts.splice(randomIndex, 1);
+  
+        
+        if (availablePrompts.length === 0) {
+          availablePrompts = [...prompts];
+        }
       }
     }
   });
