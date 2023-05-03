@@ -39,6 +39,8 @@ function getUniqueClientIds(room) {
 
   return uniqueClientIds;
 }
+
+
 function getRoomStatus(room) {
   return clientRooms.get(room)?.gameStarted;
 }
@@ -46,16 +48,16 @@ function getRoomStatus(room) {
 io.on("connection", (socket) => {
   socket.on("sendPrompt", (receivedPrompt, nickname) => {
     console.log(`Received prompt "${receivedPrompt}" from client ${nickname}`);
-  
+
     if (!clientPrompts.has(socket.userId)) {
       clientPrompts.set(socket.userId, []);
     }
     clientPrompts.get(socket.userId).push({ prompt: receivedPrompt, author: nickname });
-  
+
     const room = Array.from(clientRooms.get(socket.id))[0];
-  
+
     const uniqueClientIds = getUniqueClientIds(room);
-  
+
     let allClientsSentPrompt = true;
     for (const clientId of uniqueClientIds) {
       if (!clientPrompts.has(clientId) || clientPrompts.get(clientId).length === 0) {
@@ -63,10 +65,10 @@ io.on("connection", (socket) => {
         break;
       }
     }
-  
+
     if (allClientsSentPrompt) {
       console.log("All clients have sent prompts.");
-      let promptarray = [];
+      let promptArray = [];
   
       const gameState = 1;
   
@@ -75,33 +77,48 @@ io.on("connection", (socket) => {
         let randomPrompt;
         let randomPromptAuthor;
   
+        let usedPrompts = new Set();
+  
+        let attempts = 0;
+        let maxAttempts = uniqueClientIds.size * clientPromptsArray.length;
+  
         do {
+          attempts++;
           const randomClient = Array.from(uniqueClientIds)[Math.floor(Math.random() * uniqueClientIds.size)];
+  
+          // Skip if the clientId is the same as the current client
+          if (randomClient === clientId) continue;
+  
           const randomPromptObject = clientPrompts.get(randomClient)[Math.floor(Math.random() * clientPrompts.get(randomClient).length)];
           randomPrompt = randomPromptObject.prompt;
           randomPromptAuthor = randomPromptObject.author;
-        } while (clientPromptsArray.some(promptObject => promptObject.prompt === randomPrompt) || promptarray.includes(randomPrompt));
-        promptarray.push(randomPrompt);
-        console.log(`Sending prompt "${randomPrompt}" to client ${clientId}`);
-        io.to(clientId).emit("updateGameState", gameState, randomPrompt, randomPromptAuthor);
+        } while (usedPrompts.size < clientPromptsArray.length && (clientPromptsArray.some(promptObject => promptObject.prompt === randomPrompt) || promptArray.includes(randomPrompt)) && attempts < maxAttempts);
+  
+        if (attempts < maxAttempts) {
+          usedPrompts.add(randomPrompt);
+          promptArray.push(randomPrompt);
+          console.log(`Sending prompt "${randomPrompt}" to client ${clientId}`);
+          io.to(clientId).emit("updateGameState", gameState, randomPrompt, randomPromptAuthor);
+        } else {
+          console.log(`Could not find a suitable prompt for client ${clientId}`);
+        }
       }
       for (const clientId of uniqueClientIds) { clientPrompts.set(clientId, []); }
     }
   });
-  
-  
-  
+
+
   socket.on("sendGif", (selectedImageUrl, otherPrompt, otherPromptAuthor, nickname) => {
     console.log(`Received gif "${selectedImageUrl}" and prompt "${otherPrompt}" from client ${socket.userId}`);
-  
+
     const room = Array.from(clientRooms.get(socket.id))[0];
     const uniqueClientIds = getUniqueClientIds(room);
-  
+
 
     const gifAndPromptId = uuidv4();
-    clientGifsAndPrompts.set(gifAndPromptId, { clientId: socket.userId, selectedImageUrl, otherPrompt, otherPromptAuthor,nickname: nickname });
-  
-   
+    clientGifsAndPrompts.set(gifAndPromptId, { clientId: socket.userId, selectedImageUrl, otherPrompt, otherPromptAuthor, nickname: nickname });
+
+
     let allClientsSentGifAndPrompt = true;
     for (const clientId of uniqueClientIds) {
       const hasClientSentGifAndPrompt = Array.from(clientGifsAndPrompts.values()).some((entry) => entry.clientId === clientId);
@@ -110,19 +127,19 @@ io.on("connection", (socket) => {
         break;
       }
     }
-  
-   
+
+
     if (allClientsSentGifAndPrompt) {
       console.log("All clients have sent gifs and prompts.");
-  
+
       const gameState = 2;
       const gifAndPromptList = Array.from(clientGifsAndPrompts.values());
       for (const clientId of uniqueClientIds) {
         console.log(`Sending gif and prompt list to client ${clientId}`);
         io.to(clientId).emit("updateGameState2", gameState, gifAndPromptList);
       }
-  
-  
+
+
       clientGifsAndPrompts.clear();
     }
   });
@@ -130,16 +147,16 @@ io.on("connection", (socket) => {
   socket.on("vote", (votedNM, votedPNM, voter) => {
     const room = Array.from(clientRooms.get(socket.id))[0];
     const uniqueClientIds = getUniqueClientIds(room);
-  
+
     // Initialize roomVotingData for the room if it doesn't exist
     if (!roomVotingData.has(room)) {
       const votedNamesAndPoints = new Map();
       roomVotingData.set(room, { votedNamesAndPoints, hasClientVoted: new Map() });
     }
-  
+
     const votingData = roomVotingData.get(room);
     const { votedNamesAndPoints, hasClientVoted } = votingData;
-  
+
     // Add points to the respective names
     function addPoints(name, points) {
       if (!votedNamesAndPoints.has(name)) {
@@ -147,87 +164,86 @@ io.on("connection", (socket) => {
       }
       votedNamesAndPoints.set(name, votedNamesAndPoints.get(name) + points);
     }
-  
+
     addPoints(votedNM, 100);
-    if (votedPNM != voter)
-    {
-      
+    if (votedPNM != voter) {
+
       addPoints(votedPNM, 50);
     }
-    
-  
+
+
     // Check if all clients have voted
     if (hasClientVoted.size === 0) {
       uniqueClientIds.forEach((clientId) => {
         hasClientVoted.set(clientId, false);
       });
     }
-  
+
     hasClientVoted.set(socket.userId, true);
-  
+
     if (Array.from(hasClientVoted.values()).every((voted) => voted)) {
       const gameState = 3;
       const nicknamePointsList = Array.from(votedNamesAndPoints.entries()).map(([name, points]) => ({
         nickname: name,
         points: points,
       }));
-  
+
       for (const clientId of uniqueClientIds) {
         console.log(`Sending nickname points list to client ${clientId}`);
         io.to(clientId).emit("updateGameState3", gameState, nicknamePointsList);
       }
-  
+
       // Reset the hasClientVoted Map for the current room
       hasClientVoted.clear();
     }
   });
-  
+
   socket.on("restartGame", () => {
     const room = Array.from(clientRooms.get(socket.id))[0];
     const uniqueClientIds = getUniqueClientIds(room);
     const gameState = 0;
-  
+
     let availablePrompts = [...prompts];
-  
+
     for (const clientId of uniqueClientIds) {
       const randomIndex = Math.floor(Math.random() * availablePrompts.length);
       const randomPrompt = availablePrompts[randomIndex];
       console.log(`Sending prompt "${randomPrompt}" to client ${clientId}`);
       io.to(clientId).emit("receivePrompt", randomPrompt);
       io.to(clientId).emit("updateGameState", gameState);
-  
-      
+
+
       availablePrompts.splice(randomIndex, 1);
-  
-      
+
+
       if (availablePrompts.length === 0) {
         availablePrompts = [...prompts];
       }
     }
   });
-  
-  
 
 
-  socket.on("socketcarousel", ()=>{
+
+
+  socket.on("socketcarousel", () => {
     const room = Array.from(clientRooms.get(socket.id))[0];
     const uniqueClientIds = getUniqueClientIds(room);
-    
-  
+
+
     for (const clientId of uniqueClientIds) {
-      
-      
-      io.to(clientId).emit("carousel", );
-      
+
+
+      io.to(clientId).emit("carousel",);
+
     }
   });
-  
-  
+
+
   socket.on("client connected", (clientId) => {
     console.log(`Client ${clientId} connected with socket ID ${socket.id}`);
     socket.userId = clientId;
 
-    
+
     clientRooms.set(socket.id, new Set());
   });
   const clientIpAddress = socket.request.connection.remoteAddress;
@@ -259,7 +275,7 @@ io.on("connection", (socket) => {
     socket.nickname = nickname;
     if (io.sockets.adapter.rooms.has(room)) {
       const uniqueClientIds = getUniqueClientIds(room);
-  
+
       // Check for existing nickname in the room
       const existingNicknames = roomNicknames.get(room) || new Set();
       if (existingNicknames.has(nickname)) {
@@ -267,7 +283,7 @@ io.on("connection", (socket) => {
         io.to(socket.id).emit("join failed", feedback);
         return;
       }
-  
+
       if (!uniqueClientIds.has(socket.userId)) {
         if (!clientRooms.has(socket.id)) {
           clientRooms.set(socket.id, new Set());
@@ -276,10 +292,10 @@ io.on("connection", (socket) => {
         clientRooms.get(socket.id).add(room);
         socket.join(socket.userId);
         io.to(socket.userId).emit("room number", room);
-  
+
         const updatedUniqueClientIds = getUniqueClientIds(room);
         const numberOfClients = updatedUniqueClientIds.size;
-  
+
         const roomInstance = io.sockets.adapter.rooms.get(room);
         if (roomInstance) {
           if (!roomNicknames.has(room)) {
@@ -303,7 +319,7 @@ io.on("connection", (socket) => {
       io.to(socket.id).emit("join failed", feedback);
     }
   });
-  
+
 
   socket.on("disconnect", () => {
     console.log(`User at IP ${clientIpAddress} disconnected`);
@@ -312,10 +328,10 @@ io.on("connection", (socket) => {
     if (clientRooms.has(socket.id)) {
 
       for (const room of clientRooms.get(socket.id)) {
-   
+
         const roomInstance = io.sockets.adapter.rooms.get(room);
 
-     
+
         if (roomInstance) {
           roomNicknames.get(room).delete(socket.nickname);
 
@@ -323,7 +339,7 @@ io.on("connection", (socket) => {
           const numberOfClients = updatedUniqueClientIds.size;
           io.to(room).emit("clientsInRoom", numberOfClients);
 
-    
+
           io.to(room).emit("playerDisconnected", Array.from(roomNicknames.get(room)));
           if (numberOfClients === 0) {
             clientRooms.delete(room);
@@ -342,27 +358,27 @@ io.on("connection", (socket) => {
   socket.on('start game', () => {
     for (const room of clientRooms.get(socket.id)) {
       io.to(room).emit("startGame", true);
-  
+
       const roomInstance = clientRooms.get(room);
       if (roomInstance) {
         roomInstance.gameStarted = true;
       }
-  
+
       const uniqueClientIds = getUniqueClientIds(room);
       console.log("Unique client IDs in room:", uniqueClientIds);
-  
-      let availablePrompts = [...prompts]; 
-  
+
+      let availablePrompts = [...prompts];
+
       for (const clientId of uniqueClientIds) {
         const randomIndex = Math.floor(Math.random() * availablePrompts.length);
         const randomPrompt = availablePrompts[randomIndex];
         console.log(`Sending prompt "${randomPrompt}" to client ${clientId}`);
         io.to(clientId).emit("receivePrompt", randomPrompt);
-  
-    
+
+
         availablePrompts.splice(randomIndex, 1);
-  
-        
+
+
         if (availablePrompts.length === 0) {
           availablePrompts = [...prompts];
         }

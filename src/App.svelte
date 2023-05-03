@@ -4,6 +4,7 @@
   import { each } from "svelte/internal";
   import Game from "./lib/Game.svelte";
   import Cube from "./lib/Cube.svelte";
+  
   import { prompt, nickname, host } from "./stores.js";
   import socket from "./socket.js";
   import TenorGifs from "./lib/TenorGifs.svelte";
@@ -201,7 +202,7 @@ radial-gradient(at 64% 45%, hsla(16,50%,35%,1) 0px, transparent 50%);  }
     
     padding: 15px;
     border-radius: 3px;
-    max-width: 95vw;
+    max-width: 600px;
     min-width:300px;
     
   }

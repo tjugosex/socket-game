@@ -75,21 +75,28 @@
 {#if $selectedImageUrl}{/if}
 
 <style>
-  .gifbackground{
+  .gifbackground {
+    width: 100%;
+    height: 100%;
+    padding: 3px;
+    position: relative;
+    display: inline-block;
+    text-align: center;
     border-radius: 4px;
   }
 
-  .gifimage{
+  .gifimage {
     margin: 1px;
     padding: 0;
     border: solid #281C2D 1px;
     border-radius: 5px;
     width: 100%;
-    height: auto;
+    height: 100%;
     object-fit: cover;
   }
-  .gifimage:hover{
+  .gifimage:hover {
     border: solid #dc9af8 1px;
+    cursor: pointer;
   }
 
   .gif-container {
@@ -97,6 +104,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 1px;
     width: 100%;
+    height: 100%;
   }
   @media (max-width: 500px) {
     .gif-container {

@@ -2,7 +2,7 @@
 </script>
 
 <div id="cube" style="width: 4em; height: 8em;">
-    <div style="transform: translate3d(0em, 0em, 2em)"><div>🤯</div></div>
+  <div style="transform: translate3d(0em, 0em, 2em)"><div>🤯</div></div>
   <div style="transform: translate3d(4em, 0em, 2em)"><div>🤯</div></div>
   <div style="transform: translate3d(0em, 4em, 2em)"><div>🤯</div></div>
   <div style="transform: translate3d(4em, 4em, 2em)"><div>🤯</div></div>
@@ -32,5 +32,6 @@
       transform: rotateX(-0.1turn) rotateY(1turn);
     }
   }
+
   
 </style>
